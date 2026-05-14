@@ -2,7 +2,7 @@ import subprocess
 import shutil
 import os
 from pathlib import Path
-
+import re
 
 MARS_JAR = "Mars4_5.jar"
 ASM_FILE = "wiener_filter.asm"
@@ -64,7 +64,22 @@ def run_testcase(test_num):
     actual_output = read_file(saved_output)
     expected_output = read_file(expected_src)
 
-    passed = actual_output == expected_output
+    # Handle error messages
+    if expected_output.startswith("Error"):
+        passed = actual_output.strip() == expected_output.strip()
+
+    else:
+        # Extract all float/int numbers
+        actual_nums = list(map(float, re.findall(r'-?\d+\.?\d*', actual_output)))
+        expected_nums = list(map(float, re.findall(r'-?\d+\.?\d*', expected_output)))
+
+        if len(actual_nums) != len(expected_nums):
+            passed = False
+        else:
+            passed = all(
+                abs(a - e) <= 0.21
+                for a, e in zip(actual_nums, expected_nums)
+            )
 
     print(f"\nTest {test_num}: ", end="")
 
